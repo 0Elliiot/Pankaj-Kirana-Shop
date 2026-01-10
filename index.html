@@ -16,21 +16,21 @@
 </head>
 <body class="bg-gray-50 pb-24 font-sans text-black">
 
-    <header class="bg-indigo-700 text-white p-4 sticky top-0 shadow-lg flex justify-between items-center z-50">
+    <header class="bg-indigo-900 text-white p-3 sticky top-0 shadow-lg flex justify-between items-center z-50">
         <div>
-            <h1 class="text-xl font-bold italic">Pankaj Kirana 🛒</h1>
-            <p id="user-welcome" class="text-[16px] opacity-80 font-medium">Welcome, Guest</p>
+            <h1 class="text-xc font-bold italic">Pankaj Kirana 🛒</h1>
+            <p id="user-welcome" class="text-[14px] opacity-80 font-medium">Welcome, Guest</p>
         </div>
         <div class="flex gap-2">
-            <button onclick="showTrackModal()" class="text-[10px] bg-indigo-500 px-2 py-1 rounded-full border border-indigo-400 font-bold uppercase">Track</button>
-            <button id="auth-btn" onclick="toggleAuthModal()" class="text-[10px] bg-white text-indigo-700 px-2 py-1 rounded-full font-bold uppercase">Login</button>
+            <button onclick="showTrackModal()" class="text-[10px] bg-indigo-600 px-2 py-1 rounded-full border border-indigo-400 font-bold uppercase">Track Order</button>
+            <button id="auth-btn" onclick="toggleAuthModal()" class="text-[11px] bg-white text-indigo-700 px-3 py-1 rounded-full font-bold uppercase">Login</button>
             <button onclick="toggleCart()" class="bg-white text-indigo-700 px-3 py-1 rounded-full font-bold text-sm shadow-md">
                 🛒 (<span id="cart-count">0</span>)
             </button>
         </div>
     </header>
 
-    <div class="flex overflow-x-auto p-4 gap-2 bg-white shadow-sm sticky top-[60px] z-40 scrollbar-hide">
+    <div class="flex overflow-x-auto p-4 gap-3 bg-white shadow-sm sticky top-[60px] z-50 scrollbar-hide">
         <button onclick="filterProducts('All', this)" class="cat-btn active-cat bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">All Items</button>
         <button onclick="filterProducts('Drink', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Cold Drinks</button>
         <button onclick="filterProducts('Kirana', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Daily Kirana</button>
