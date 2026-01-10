@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pankaj Store - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4">
+
+    <header class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+        <h1 class="text-2xl font-bold text-yellow-400">Dukan Control Center 📱</h1>
+        <div id="online-status" class="text-xs bg-green-600 px-2 py-1 rounded">Live</div>
+    </header>
+
+    <div id="admin-orders" class="space-y-4">
+        <p class="text-center text-gray-500">Orders load ho rahe hain...</p>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAeG25EZLmrhfedtBwsak0Fd_2Opsa99_g",
+            authDomain: "pankaj-kirana-store-38072.firebaseapp.com",
+            projectId: "pankaj-kirana-store-38072",
+            storageBucket: "pankaj-kirana-store-38072.firebasestorage.app",
+            messagingSenderId: "581034855422",
+            appId: "1:581034855422:web:aaf2abecef1c0e7ba60eaf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Orders ko real-time listen karna
+        db.ref('orders').on('value', (snapshot) => {
+            const ordersDiv = document.getElementById('admin-orders');
+            const data = snapshot.val();
+            
+            if (!data) {
+                ordersDiv.innerHTML = "<p class='text-center'>Abhi koi order nahi hai.</p>";
+                return;
+            }
+
+            // Orders ko list mein convert karke dikhana (Latest first)
+            const html = Object.keys(data).reverse().map(key => {
+                const order = data[key];
+                let statusColor = "text-yellow-400";
+                if(order.status === "Accepted") statusColor = "text-blue-400";
+                if(order.status === "Dispatched") statusColor = "text-green-400";
+
+                return `
+                <div class="bg-gray-800 p-4 rounded-2xl border-l-4 border-yellow-500 shadow-xl">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-bold text-lg text-white">${order.orderId}</span>
+                        <span class="text-xs text-gray-400">${new Date(order.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div class="mb-3">
+                        <p class="text-sm font-semibold text-gray-300">Customer: ${order.name}</p>
+                        <p class="text-xs text-gray-400">Addr: ${order.address}</p>
+                        <div class="mt-2 text-xs bg-gray-700 p-2 rounded">
+                            ${order.items.map(i => i.name).join(', ')}
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-gray-700 pt-3">
+                        <span class="font-bold ${statusColor}">${order.status}</span>
+                        <div class="space-x-2">
+                            <button onclick="updateStatus('${key}', 'Accepted')" class="bg-blue-600 px-3 py-1 rounded text-xs">Accept</button>
+                            <button onclick="updateStatus('${key}', 'Dispatched')" class="bg-green-600 px-3 py-1 rounded text-xs">Dispatch</button>
+                            <button onclick="deleteOrder('${key}')" class="bg-red-600 px-3 py-1 rounded text-xs">🗑️</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            ordersDiv.innerHTML = html;
+        });
+
+        // Status update karne ka function
+        function updateStatus(orderKey, newStatus) {
+            db.ref('orders/' + orderKey).update({ status: newStatus })
+              .then(() => alert("Status badal gaya: " + newStatus));
+        }
+
+        // Order delete karne ka function (Jab order poora ho jaye)
+        function deleteOrder(key) {
+            if(confirm("Bhai, kya ye order delete kar doon?")) {
+                db.ref('orders/' + key).remove();
+            }
+        }
+    </script>
+</body>
+</html>
