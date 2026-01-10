@@ -7,49 +7,59 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
+    <style>
+        .active-cat { background-color: #4338ca !important; color: white !important; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
 </head>
 <body class="bg-gray-50 pb-24 font-sans text-black">
 
     <header class="bg-indigo-700 text-white p-4 sticky top-0 shadow-lg flex justify-between items-center z-50">
         <h1 class="text-xl font-bold italic">Pankaj Kirana 🛒</h1>
         <div class="flex gap-2">
-            <button onclick="showTrackModal()" class="text-[10px] bg-indigo-500 px-2 py-1 rounded-full">Track</button>
-            <button onclick="toggleCart()" class="bg-white text-indigo-700 px-3 py-1 rounded-full font-bold text-sm">
+            <button onclick="showTrackModal()" class="text-[10px] bg-indigo-500 px-2 py-1 rounded-full border border-indigo-400">Track</button>
+            <button onclick="toggleCart()" class="bg-white text-indigo-700 px-3 py-1 rounded-full font-bold text-sm shadow-md">
                 🛒 (<span id="cart-count">0</span>)
             </button>
         </div>
     </header>
 
+    <div class="flex overflow-x-auto p-4 gap-2 bg-white shadow-sm sticky top-[60px] z-40 scrollbar-hide">
+        <button onclick="filterProducts('All', this)" class="cat-btn active-cat bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">All Items</button>
+        <button onclick="filterProducts('Drink', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Cold Drinks</button>
+        <button onclick="filterProducts('Kirana', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Daily Kirana</button>
+        <button onclick="filterProducts('Snacks', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Snacks & Biscuits</button>
+        <button onclick="filterProducts('Personal', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Personal Care</button>
+    </div>
+
     <main id="product-list" class="p-4 grid grid-cols-2 md:grid-cols-4 gap-4"></main>
 
     <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-end">
         <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 shadow-2xl">
-            <h2 class="text-2xl font-black mb-4">Aapka Order</h2>
-            <div id="cart-items" class="space-y-3 mb-6 max-h-48 overflow-y-auto border-b pb-4 font-medium text-black"></div>
+            <h2 class="text-2xl font-black mb-4">Aapka Cart</h2>
+            <div id="cart-items" class="space-y-3 mb-6 max-h-60 overflow-y-auto border-b pb-4 text-black font-medium"></div>
             <div class="space-y-3">
-                <input id="cust-name" type="text" placeholder="Apna Naam Likhein" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500">
-                <input id="cust-addr" type="text" placeholder="Ghar ka Address" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500">
+                <input id="cust-name" type="text" placeholder="Apna Naam" class="w-full p-3 border rounded-xl outline-none">
+                <input id="cust-addr" type="text" placeholder="Ghar ka Address" class="w-full p-3 border rounded-xl outline-none">
                 <div class="flex justify-between items-center py-2 text-xl font-bold">
                     <span>Total:</span><span class="text-green-600">₹<span id="cart-total">0</span></span>
                 </div>
-                <button id="orderBtn" onclick="placeOrder()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-transform">
-                    🚀 Order Now (Direct WhatsApp)
-                </button>
-                <button onclick="toggleCart()" class="w-full mt-2 text-gray-500">Band Karein</button>
+                <button onclick="placeOrder()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-md active:scale-95 transition-all">🚀 Confirm on WhatsApp</button>
+                <button onclick="toggleCart()" class="w-full mt-2 text-gray-400 text-sm">Cancel</button>
             </div>
         </div>
     </div>
 
     <div id="track-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 text-black">
-            <h2 class="text-xl font-bold mb-4">Order Track Karein</h2>
+            <h2 class="text-xl font-bold mb-4 text-center">Track Order</h2>
             <input id="track-id-input" type="text" placeholder="ORD1001" class="w-full p-3 border rounded-xl mb-4 uppercase text-center font-bold">
-            <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Status Dekhein</button>
-            <div id="track-result" class="mt-4 p-4 bg-indigo-50 rounded-xl hidden">
-                <p class="font-bold text-lg text-center">Status: <span id="status-text" class="text-indigo-700">---</span></p>
-                <div id="status-msg" class="text-sm mt-2 text-center"></div>
+            <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Check Status</button>
+            <div id="track-result" class="mt-4 p-4 bg-indigo-50 rounded-xl hidden text-center">
+                <p class="font-bold">Status: <span id="status-text" class="text-indigo-700 uppercase">---</span></p>
+                <div id="status-msg" class="text-sm mt-2"></div>
             </div>
-            <button onclick="showTrackModal()" class="w-full text-gray-500 mt-4 text-sm underline text-center">Close</button>
+            <button onclick="showTrackModal()" class="w-full text-gray-400 mt-4 text-xs underline text-center font-bold">Close</button>
         </div>
     </div>
 
@@ -64,36 +74,125 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        const myWhatsApp = "918954998216"; // Apna number yahan dalo
+        const myWhatsApp = "918954998216"; // Updated Number
 
         const products = [
-            { id: 1, name: "Veg Momos", price: 80, img: "🥟" },
-            { id: 2, name: "Paneer Momos", price: 120, img: "🥟" },
-            { id: 3, name: "Coca Cola", price: 20, img: "🥤" },
-            { id: 4, name: "Atta 5kg", price: 245, img: "🌾" }
+            { id: 1, name: "Coca Cola 750ml", price: 45, img: "🥤", cat: "Drink" },
+            { id: 2, name: "Pepsi 750ml", price: 45, img: "🥤", cat: "Drink" },
+            { id: 3, name: "Sprite 750ml", price: 45, img: "🍋", cat: "Drink" },
+            { id: 4, name: "Thums Up 750ml", price: 45, img: "🥤", cat: "Drink" },
+            { id: 5, name: "Maaza 600ml", price: 40, img: "🥭", cat: "Drink" },
+            { id: 6, name: "Sting Energy", price: 20, img: "⚡", cat: "Drink" },
+            { id: 7, name: "Mountain Dew", price: 45, img: "🍏", cat: "Drink" },
+            { id: 8, name: "Limca 750ml", price: 45, img: "🍸", cat: "Drink" },
+            { id: 9, name: "Frooti Tetra", price: 10, img: "🧃", cat: "Drink" },
+            { id: 10, name: "Red Bull", price: 125, img: "🐂", cat: "Drink" },
+            { id: 11, name: "Fortune Oil 1L", price: 160, img: "🍶", cat: "Kirana" },
+            { id: 12, name: "Aashirvaad Atta 5kg", price: 255, img: "🌾", cat: "Kirana" },
+            { id: 13, name: "Tata Salt 1kg", price: 28, img: "🧂", cat: "Kirana" },
+            { id: 14, name: "Sugar 1kg", price: 45, img: "🍬", cat: "Kirana" },
+            { id: 15, name: "Red Label 250g", price: 145, img: "☕", cat: "Kirana" },
+            { id: 16, name: "Toor Dal 1kg", price: 170, img: "🍲", cat: "Kirana" },
+            { id: 17, name: "Moong Dal 1kg", price: 120, img: "🍲", cat: "Kirana" },
+            { id: 18, name: "Basmati Rice 1kg", price: 95, img: "🍚", cat: "Kirana" },
+            { id: 19, name: "Rajma 1kg", price: 140, img: "🍛", cat: "Kirana" },
+            { id: 20, name: "Kabuli Chana 1kg", price: 130, img: "🍛", cat: "Kirana" },
+            { id: 21, name: "Poha 1kg", price: 55, img: "🌾", cat: "Kirana" },
+            { id: 22, name: "Besan 500g", price: 60, img: "🥣", cat: "Kirana" },
+            { id: 23, name: "Suji 500g", price: 35, img: "🥣", cat: "Kirana" },
+            { id: 24, name: "Maida 500g", price: 30, img: "🥣", cat: "Kirana" },
+            { id: 25, name: "MDH Masala", price: 85, img: "📦", cat: "Kirana" },
+            { id: 26, name: "Maggi 12-Pack", price: 160, img: "🍜", cat: "Snacks" },
+            { id: 27, name: "Kurkure Masala", price: 10, img: "🍿", cat: "Snacks" },
+            { id: 28, name: "Lays Blue", price: 10, img: "🍟", cat: "Snacks" },
+            { id: 29, name: "Uncle Chips", price: 20, img: "🍟", cat: "Snacks" },
+            { id: 30, name: "Parle-G (Big)", price: 25, img: "🍪", cat: "Snacks" },
+            { id: 31, name: "Good Day", price: 30, img: "🍪", cat: "Snacks" },
+            { id: 32, name: "Hide & Seek", price: 35, img: "🍪", cat: "Snacks" },
+            { id: 33, name: "Marie Gold", price: 10, img: "🍪", cat: "Snacks" },
+            { id: 34, name: "Haldiram Bhujia", price: 40, img: "🥨", cat: "Snacks" },
+            { id: 35, name: "Almond 100g", price: 110, img: "🥜", cat: "Snacks" },
+            { id: 36, name: "Kaju 100g", price: 120, img: "🥜", cat: "Snacks" },
+            { id: 37, name: "Dairy Milk", price: 40, img: "🍫", cat: "Snacks" },
+            { id: 38, name: "KitKat", price: 25, img: "🍫", cat: "Snacks" },
+            { id: 39, name: "Ketchup Bottle", price: 120, img: "🍅", cat: "Snacks" },
+            { id: 40, name: "Pasta 500g", price: 65, img: "🍝", cat: "Snacks" },
+            { id: 41, name: "Dettol Soap", price: 35, img: "🧼", cat: "Personal" },
+            { id: 42, name: "Dove Soap", price: 55, img: "🧼", cat: "Personal" },
+            { id: 43, name: "Colgate Paste", price: 95, img: "🪥", cat: "Personal" },
+            { id: 44, name: "Clinic Plus", price: 75, img: "🧴", cat: "Personal" },
+            { id: 45, name: "Parachute Oil", price: 40, img: "🥥", cat: "Personal" },
+            { id: 46, name: "Surf Excel 1kg", price: 140, img: "🧺", cat: "Personal" },
+            { id: 47, name: "Vim Bar", price: 10, img: "🍋", cat: "Personal" },
+            { id: 48, name: "Harpic Blue", price: 105, img: "🚽", cat: "Personal" },
+            { id: 49, name: "Lizol 500ml", price: 115, img: "🧹", cat: "Personal" },
+            { id: 50, name: "Fair & Lovely", price: 60, img: "✨", cat: "Personal" }
         ];
 
-        let cart = [];
-        function renderProducts() {
-            document.getElementById('product-list').innerHTML = products.map(p => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center">
-                    <div class="text-4xl mb-2">${p.img}</div>
-                    <h3 class="font-bold">${p.name}</h3>
-                    <p class="text-indigo-600 font-bold">₹${p.price}</p>
-                    <button onclick="addToCart(${p.id})" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-lg font-semibold">+ Add</button>
+        let cart = {}; // Changed to object for qty management
+
+        function renderProducts(filter = 'All') {
+            const list = document.getElementById('product-list');
+            const filtered = filter === 'All' ? products : products.filter(p => p.cat === filter);
+            list.innerHTML = filtered.map(p => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center flex flex-col justify-between">
+                    <div>
+                        <div class="text-4xl mb-2">${p.img}</div>
+                        <h3 class="font-bold text-gray-800 text-xs h-8 overflow-hidden">${p.name}</h3>
+                        <p class="text-indigo-600 font-bold">₹${p.price}</p>
+                    </div>
+                    <button onclick="addToCart(${p.id}, event)" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold border border-indigo-100">+ Add</button>
                 </div>
             `).join('');
         }
 
-        function addToCart(id) { cart.push(products.find(p => p.id === id)); updateCart(); }
+        function filterProducts(cat, btn) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active-cat'));
+            btn.classList.add('active-cat');
+            renderProducts(cat);
+        }
+
+        function addToCart(id, event) {
+            if (cart[id]) { cart[id].qty++; } 
+            else { 
+                const product = products.find(p => p.id === id);
+                cart[id] = { ...product, qty: 1 };
+            }
+            updateCart();
+            const btn = event.target;
+            btn.innerText = "Added ✓"; btn.classList.replace('bg-indigo-50', 'bg-green-500'); btn.classList.replace('text-indigo-700', 'text-white');
+            setTimeout(() => { btn.innerText = "+ Add"; btn.classList.replace('bg-green-500', 'bg-indigo-50'); btn.classList.replace('text-white', 'text-indigo-700'); }, 800);
+        }
+
+        function changeQty(id, delta) {
+            if (cart[id]) {
+                cart[id].qty += delta;
+                if (cart[id].qty <= 0) { delete cart[id]; }
+                updateCart();
+            }
+        }
+
         function updateCart() {
-            document.getElementById('cart-count').innerText = cart.length;
-            let total = 0;
-            document.getElementById('cart-items').innerHTML = cart.map(item => {
-                total += item.price;
-                return `<div class="flex justify-between"><span>${item.name}</span><b>₹${item.price}</b></div>`;
-            }).join('');
+            let total = 0; let count = 0;
+            const itemsDiv = document.getElementById('cart-items');
+            itemsDiv.innerHTML = "";
+            
+            Object.values(cart).forEach(item => {
+                total += item.price * item.qty;
+                count += item.qty;
+                itemsDiv.innerHTML += `
+                <div class="flex justify-between items-center text-sm py-2 font-medium border-b border-gray-50">
+                    <div class="w-1/2"><span>${item.name}</span><br><span class="text-xs text-gray-400">₹${item.price} x ${item.qty}</span></div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-red-500 font-bold">-</button>
+                        <span class="font-bold w-4 text-center">${item.qty}</span>
+                        <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-green-600 font-bold">+</button>
+                        <b class="ml-2 w-12 text-right">₹${item.price * item.qty}</b>
+                    </div>
+                </div>`;
+            });
+            
+            document.getElementById('cart-count').innerText = count;
             document.getElementById('cart-total').innerText = total;
         }
 
@@ -104,23 +203,21 @@
             const name = document.getElementById('cust-name').value;
             const addr = document.getElementById('cust-addr').value;
             const total = document.getElementById('cart-total').innerText;
-
-            if(!name || !addr || cart.length === 0) { alert("Details bharein!"); return; }
+            const cartItems = Object.values(cart);
+            if(!name || !addr || cartItems.length === 0) { alert("Details dalo bhai!"); return; }
 
             db.ref('last_order_id').transaction((v) => (v || 1000) + 1, (err, comm, snap) => {
                 if (comm) {
                     const orderId = "ORD" + snap.val();
                     const orderData = {
-                        orderId: orderId, name: name, address: addr, items: cart,
+                        orderId: orderId, name: name, address: addr, items: cartItems,
                         total: total, status: "Pending", remarks: "", timestamp: firebase.database.ServerValue.TIMESTAMP
                     };
-
                     db.ref('orders/' + orderId).set(orderData).then(() => {
                         let itemsStr = "";
-                        cart.forEach(i => itemsStr += `- ${i.name} (₹${i.price})%0A`);
-                        const msg = `*NEW ORDER: ${orderId}*%0A*Name:* ${name}%0A*Addr:* ${addr}%0A*Total:* ₹${total}%0A%0A*Items:*%0A${itemsStr}`;
-                        
-                        cart = []; updateCart(); toggleCart();
+                        cartItems.forEach(i => itemsStr += `- ${i.name} [x${i.qty}] (₹${i.price * i.qty})%0A`);
+                        const msg = `*NEW ORDER: ${orderId}*%0A*Name:* ${name}%0A*Total:* ₹${total}%0A%0A*Items:*%0A${itemsStr}`;
+                        cart = {}; updateCart(); toggleCart();
                         window.location.href = `whatsapp://send?phone=${myWhatsApp}&text=${msg}`;
                         setTimeout(() => { window.location.href = `https://api.whatsapp.com/send?phone=${myWhatsApp}&text=${msg}`; }, 600);
                     });
@@ -130,23 +227,20 @@
 
         function trackOrder() {
             const id = document.getElementById('track-id-input').value.trim().toUpperCase();
-            if(!id) return;
             db.ref('orders/' + id).once('value').then((snap) => {
                 const d = snap.val();
-                document.getElementById('track-result').classList.remove('hidden');
+                const res = document.getElementById('track-result');
+                res.classList.remove('hidden');
                 if(d) {
                     document.getElementById('status-text').innerText = d.status;
-                    let m = "Pankaj bhai order check kar rahe hain.";
-                    if(d.status === "Accepted") m = "✅ Order accept ho gaya hai!";
-                    if(d.status === "Dispatched") m = "🚚 Samaan raste mein hai!";
-                    if(d.status === "Rejected") {
-                        m = `<span class="text-red-600 font-bold">Order Reject ho gaya.</span><br>
-                             <div class="mt-2 p-2 bg-white border rounded text-xs"><b>Kaaran:</b> ${d.remarks || 'N/A'}</div>`;
-                    }
+                    let m = "Pankaj bhai check kar rahe hain...";
+                    if(d.status === "Accepted") m = "✅ Order Pack ho raha hai!";
+                    if(d.status === "Dispatched") m = "🚚 Order raste mein hai!";
+                    if(d.status === "Rejected") m = `<span class="text-red-600 font-bold italic">Reject: ${d.remarks}</span>`;
                     document.getElementById('status-msg').innerHTML = m;
                 } else {
                     document.getElementById('status-text').innerText = "Not Found";
-                    document.getElementById('status-msg').innerText = "ID galat hai bhai.";
+                    document.getElementById('status-msg').innerText = "Galat ID hai bhai.";
                 }
             });
         }
