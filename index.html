@@ -25,7 +25,7 @@
     <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-end">
         <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 shadow-2xl">
             <h2 class="text-2xl font-black mb-4">Aapka Order</h2>
-            <div id="cart-items" class="space-y-3 mb-6 max-h-48 overflow-y-auto border-b pb-4 text-black"></div>
+            <div id="cart-items" class="space-y-3 mb-6 max-h-48 overflow-y-auto border-b pb-4 text-black font-medium"></div>
             <div class="space-y-3 text-black">
                 <input id="cust-name" type="text" placeholder="Apna Naam Likhein" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500">
                 <input id="cust-addr" type="text" placeholder="Ghar ka Address" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500">
@@ -40,8 +40,8 @@
         </div>
     </div>
 
-    <div id="track-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 text-black">
+    <div id="track-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-center p-4 text-black">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6">
             <h2 class="text-xl font-bold mb-4">Order Track Karein</h2>
             <input id="track-id-input" type="text" placeholder="Order ID (e.g. ORD1001)" class="w-full p-3 border rounded-xl mb-4 uppercase">
             <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Status Dekhein</button>
@@ -49,7 +49,7 @@
                 <p class="font-bold">Status: <span id="status-text" class="text-indigo-700">---</span></p>
                 <p class="text-sm mt-1" id="status-msg"></p>
             </div>
-            <button onclick="showTrackModal()" class="w-full text-gray-500 mt-4 text-sm underline">Close</button>
+            <button onclick="showTrackModal()" class="w-full text-gray-500 mt-4 text-sm underline text-center">Close</button>
         </div>
     </div>
 
@@ -65,8 +65,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ** YAHAN APNA NUMBER CHECK KAREIN **
-        const myWhatsApp = "918954998216"; 
+        const myWhatsApp = "91XXXXXXXXXX"; // Apna number yahan 91 ke sath likhein
 
         const products = [
             { id: 1, name: "Veg Momos", price: 80, img: "🥟" },
@@ -82,7 +81,7 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center">
                     <div class="text-4xl mb-2">${p.img}</div>
                     <h3 class="font-bold text-gray-800">${p.name}</h3>
-                    <p class="text-indigo-600 font-bold italic">₹${p.price}</p>
+                    <p class="text-indigo-600 font-bold">₹${p.price}</p>
                     <button onclick="addToCart(${p.id})" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-lg font-semibold border border-indigo-100">+ Add</button>
                 </div>
             `).join('');
@@ -106,49 +105,57 @@
         function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
         function showTrackModal() { document.getElementById('track-modal').classList.toggle('hidden'); }
 
+        // SEQUENCE ID LOGIC (ORD1001, 1002...)
         function placeOrder() {
             const name = document.getElementById('cust-name').value;
             const addr = document.getElementById('cust-addr').value;
             const total = document.getElementById('cart-total').innerText;
 
             if(!name || !addr || cart.length === 0) {
-                alert("Details sahi se bharein bhai!");
+                alert("Please saari details bharein!");
                 return;
             }
 
-            // Simple Order ID Logic: 1000 + Minutes & Seconds taaki unique rahe
-            const now = new Date();
-            const orderId = "ORD" + (1000 + now.getSeconds() + now.getMilliseconds()).toString().substring(0,4);
+            // Firebase Transaction for Sequence Counter
+            const counterRef = db.ref('last_order_id');
+            counterRef.transaction((currentValue) => {
+                // Agar pehli baar hai toh 1000 se shuru karega
+                return (currentValue || 1000) + 1;
+            }, (error, committed, snapshot) => {
+                if (committed) {
+                    const newId = snapshot.val();
+                    const orderId = "ORD" + newId;
 
-            const orderData = {
-                orderId: orderId,
-                name: name,
-                address: addr,
-                items: cart,
-                total: total,
-                status: "Pending",
-                timestamp: Date.now()
-            };
+                    const orderData = {
+                        orderId: orderId,
+                        name: name,
+                        address: addr,
+                        items: cart,
+                        total: total,
+                        status: "Pending",
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    };
 
-            // Database me save karna
-            db.ref('orders/' + orderId).set(orderData);
+                    // Order data save karna
+                    db.ref('orders/' + orderId).set(orderData).then(() => {
+                        // WhatsApp Message
+                        let itemDetails = "";
+                        cart.forEach(i => itemDetails += `- ${i.name} (₹${i.price})%0A`);
+                        const finalMsg = `*Pankaj Kirana Store*%0A*Naya Order Received!*%0A------------------%0A*Order ID:* ${orderId}%0A*Naam:* ${name}%0A*Address:* ${addr}%0A*Total:* ₹${total}%0A%0A*Items:*%0A${itemDetails}%0A------------------%0A*Status:* Pending`;
 
-            // WhatsApp Message tyar karna
-            let itemDetails = "";
-            cart.forEach(i => itemDetails += `- ${i.name} (₹${i.price})%0A`);
-
-            const finalMsg = `*Naya Order Received!*%0A*Order ID:* ${orderId}%0A*Naam:* ${name}%0A*Address:* ${addr}%0A*Total:* ₹${total}%0A%0A*Items:*%0A${itemDetails}`;
-
-            // Pehle hi bata dena ki ID kya hai
-            alert("Aapka Order ID: " + orderId + "\nAb OK dabayein WhatsApp par bhejne ke liye.");
-
-            // Resetting UI
-            cart = [];
-            updateCart();
-            toggleCart();
-
-            // Seedha WhatsApp par redirect
-            window.location.href = "https://api.whatsapp.com/send?phone=" + myWhatsApp + "&text=" + finalMsg;
+                        // Redirect to WhatsApp
+                        const waLink = "https://api.whatsapp.com/send?phone=" + myWhatsApp + "&text=" + finalMsg;
+                        
+                        alert("Bhai Order Save Ho Gaya! ID: " + orderId);
+                        
+                        cart = [];
+                        updateCart();
+                        toggleCart();
+                        
+                        window.location.href = waLink;
+                    });
+                }
+            });
         }
 
         function trackOrder() {
@@ -162,8 +169,8 @@
                 if(data) {
                     document.getElementById('status-text').innerText = data.status;
                     let msg = "Order mil gaya hai, Pankaj bhai check kar rahe hain.";
-                    if(data.status === "Accepted") msg = "✅ Pankaj bhai ne order accept kar liya hai!";
-                    if(data.status === "Dispatched") msg = "🚚 Samaan shop se nikal gaya hai!";
+                    if(data.status === "Accepted") msg = "✅ Order mil gaya! Pankaj bhai ne accept kar liya hai.";
+                    if(data.status === "Dispatched") msg = "🚚 Aapka order shop se nikal chuka hai!";
                     document.getElementById('status-msg').innerText = msg;
                 } else {
                     document.getElementById('status-text').innerText = "Not Found";
@@ -175,4 +182,3 @@
     </script>
 </body>
 </html>
-
