@@ -5,159 +5,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pankaj Kirana & Snacks Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
 </head>
 <body class="bg-gray-50 pb-24">
 
     <header class="bg-indigo-700 text-white p-4 sticky top-0 shadow-lg flex justify-between items-center z-10">
-        <div>
-            <h1 class="text-xl font-bold italic">Pankaj Kirana 🛒</h1>
-            <p class="text-xs opacity-80">Fresh Items & Hot Momos</p>
-        </div>
-        <button onclick="toggleCart()" class="bg-white text-indigo-700 px-4 py-2 rounded-full font-bold shadow-md">
+        <h1 class="text-xl font-bold">Pankaj Kirana 🛒</h1>
+        <button onclick="showTrackModal()" class="text-xs bg-indigo-500 px-2 py-1 rounded">Track Order</button>
+        <button onclick="toggleCart()" class="bg-white text-indigo-700 px-3 py-1 rounded-full font-bold text-sm">
             🛒 Basket (<span id="cart-count">0</span>)
         </button>
     </header>
 
-    <main id="product-list" class="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-        </main>
+    <main id="product-list" class="p-4 grid grid-cols-2 gap-4"></main>
 
     <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-end">
         <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-black">Aapka Order</h2>
-                <button onclick="toggleCart()" class="text-gray-400 text-2xl">&times;</button>
-            </div>
-            
-            <div id="cart-items" class="space-y-3 mb-6 max-h-48 overflow-y-auto border-b pb-4">
-                </div>
-
+            <h2 class="text-2xl font-black mb-4">Aapka Order</h2>
+            <div id="cart-items" class="space-y-3 mb-6 max-h-48 overflow-y-auto border-b pb-4"></div>
             <div class="space-y-3">
-                <input id="cust-name" type="text" placeholder="Apna Naam Likhein" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
-                <input id="cust-addr" type="text" placeholder="Ghar ka Address" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
-                
-                <div class="flex justify-between items-center py-2 text-xl font-bold">
-                    <span>Total Amount:</span>
-                    <span class="text-green-600">₹<span id="cart-total">0</span></span>
+                <input id="cust-name" type="text" placeholder="Apna Naam" class="w-full p-3 border rounded-xl">
+                <input id="cust-addr" type="text" placeholder="Address" class="w-full p-3 border rounded-xl">
+                <div class="flex justify-between font-bold text-xl">
+                    <span>Total:</span><span>₹<span id="cart-total">0</span></span>
                 </div>
-
-                <button onclick="placeOrder()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg transition-all shadow-lg">
-                    ✅ Order Confirm Karein
-                </button>
+                <button onclick="placeOrder()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg">✅ Order Confirm Karein</button>
+                <button onclick="toggleCart()" class="w-full text-gray-500 mt-2">Wapas Jayein</button>
             </div>
         </div>
     </div>
 
+    <div id="track-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6">
+            <h2 class="text-xl font-bold mb-4">Order Track Karein</h2>
+            <input id="track-id-input" type="text" placeholder="Order ID Daalein (e.g. ORD123)" class="w-full p-3 border rounded-xl mb-4">
+            <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Status Dekhein</button>
+            <div id="track-result" class="mt-4 p-4 bg-indigo-50 rounded-xl hidden">
+                <p class="font-bold text-indigo-800">Status: <span id="status-text">---</span></p>
+                <p class="text-sm text-gray-600 mt-1" id="status-msg"></p>
+            </div>
+            <button onclick="showTrackModal()" class="w-full text-gray-500 mt-4 text-sm">Close</button>
+        </div>
+    </div>
+
     <script>
-        // 1. AAPKI FIREBASE CONFIGURATION (UPDATED)
         const firebaseConfig = {
             apiKey: "AIzaSyAeG25EZLmrhfedtBwsak0Fd_2Opsa99_g",
             authDomain: "pankaj-kirana-store-38072.firebaseapp.com",
             projectId: "pankaj-kirana-store-38072",
             storageBucket: "pankaj-kirana-store-38072.firebasestorage.app",
             messagingSenderId: "581034855422",
-            appId: "1:581034855422:web:aaf2abecef1c0e7ba60eaf",
-            measurementId: "G-1M89YZ4REF"
+            appId: "1:581034855422:web:aaf2abecef1c0e7ba60eaf"
         };
-
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. PRODUCT DATA (Yahan se aap bad me items badal sakte hain)
         const products = [
-            { id: 1, name: "Veg Momos (Full)", price: 80, img: "🥟" },
-            { id: 2, name: "Paneer Momos (Full)", price: 120, img: "🥟" },
-            { id: 3, name: "Coca Cola (250ml)", price: 20, img: "🥤" },
-            { id: 4, name: "Aashirvaad Atta 5kg", price: 245, img: "🌾" },
-            { id: 5, name: "Fortune Oil 1L", price: 165, img: "🧪" },
-            { id: 6, name: "Maggi Noodles", price: 14, img: "🍜" }
+            { id: 1, name: "Veg Momos", price: 80, img: "🥟" },
+            { id: 2, name: "Paneer Momos", price: 120, img: "🥟" },
+            { id: 3, name: "Coca Cola", price: 20, img: "🥤" },
+            { id: 4, name: "Atta 5kg", price: 245, img: "🌾" }
         ];
 
         let cart = [];
+        const myWhatsApp = "91XXXXXXXXXX"; // APNA NUMBER DALO
 
-        // UI par products dikhana
         function renderProducts() {
-            const list = document.getElementById('product-list');
-            list.innerHTML = products.map(p => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div class="text-4xl mb-2 text-center">${p.img}</div>
-                    <h3 class="font-bold text-gray-800">${p.name}</h3>
-                    <p class="text-indigo-600 font-bold mt-1">₹${p.price}</p>
-                    <button onclick="addToCart(${p.id})" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-lg font-semibold hover:bg-indigo-700 hover:text-white transition-colors">
-                        Add Item +
-                    </button>
+            document.getElementById('product-list').innerHTML = products.map(p => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <div class="text-4xl mb-2">${p.img}</div>
+                    <h3 class="font-bold">${p.name}</h3>
+                    <p class="text-indigo-600 font-bold">₹${p.price}</p>
+                    <button onclick="addToCart(${p.id})" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-lg font-semibold border border-indigo-200">+ Add</button>
                 </div>
             `).join('');
         }
 
         function addToCart(id) {
-            const product = products.find(p => p.id === id);
-            cart.push(product);
+            cart.push(products.find(p => p.id === id));
             updateCart();
         }
 
         function updateCart() {
             document.getElementById('cart-count').innerText = cart.length;
-            const container = document.getElementById('cart-items');
             let total = 0;
-
-            container.innerHTML = cart.map((item, index) => {
+            document.getElementById('cart-items').innerHTML = cart.map((item, idx) => {
                 total += item.price;
-                return `
-                    <div class="flex justify-between items-center animate-fade-in">
-                        <span class="text-gray-700">${item.name}</span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold">₹${item.price}</span>
-                            <button onclick="removeItem(${index})" class="text-red-500 text-sm">Remove</button>
-                        </div>
-                    </div>`;
+                return `<div class="flex justify-between"><span>${item.name}</span><b>₹${item.price}</b></div>`;
             }).join('');
-            
             document.getElementById('cart-total').innerText = total;
-            if(cart.length === 0) container.innerHTML = "<p class='text-center text-gray-400'>Aapki basket khali hai.</p>";
         }
 
-        function removeItem(index) {
-            cart.splice(index, 1);
-            updateCart();
-        }
+        function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
+        function showTrackModal() { document.getElementById('track-modal').classList.toggle('hidden'); }
 
-        function toggleCart() {
-            document.getElementById('cart-modal').classList.toggle('hidden');
-        }
-
-        // 3. REALTIME DATABASE MEIN SAVE KARNA
         function placeOrder() {
             const name = document.getElementById('cust-name').value;
             const addr = document.getElementById('cust-addr').value;
+            if(!name || !addr || cart.length === 0) return alert("Details bharein!");
 
-            if(!name || !addr) return alert("Bhai, please Naam aur Address daal do!");
-            if(cart.length === 0) return alert("Basket khali hai!");
-
-            const finalOrder = {
-                customer_name: name,
-                delivery_address: addr,
-                order_items: cart,
-                total_bill: document.getElementById('cart-total').innerText,
-                status: "New Order",
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+            const orderId = "ORD" + Math.floor(1000 + Math.random() * 9000); // Unique Order ID
+            const orderData = {
+                orderId: orderId,
+                name: name,
+                address: addr,
+                items: cart,
+                total: document.getElementById('cart-total').innerText,
+                status: "Pending", // Default status
+                timestamp: Date.now()
             };
 
-            // Database ke 'orders' folder mein save hoga
-            db.ref('orders').push(finalOrder)
-                .then(() => {
-                    alert("Shukriya " + name + "! Aapka order Pankaj Kirana Store ko mil gaya hai.");
-                    cart = [];
-                    updateCart();
-                    toggleCart();
-                    window.location.reload(); 
-                })
-                .catch((error) => {
-                    alert("Kuch galti hui: " + error.message);
-                });
+            db.ref('orders/' + orderId).set(orderData).then(() => {
+                // WhatsApp Message link
+                let msg = `*Naya Order!*%0A*ID:* ${orderId}%0A*Naam:* ${name}%0A*Address:* ${addr}%0A*Total:* ₹${orderData.total}%0A%0AItems:`;
+                cart.forEach(i => msg += `%0A- ${i.name}`);
+                
+                alert(`Order Save Ho Gaya! Aapki Order ID: ${orderId}. Ab WhatsApp par send karein.`);
+                window.open(`https://wa.me/${myWhatsApp}?text=${msg}`);
+                
+                cart = [];
+                updateCart();
+                toggleCart();
+            });
+        }
+
+        function trackOrder() {
+            const id = document.getElementById('track-id-input').value.toUpperCase();
+            db.ref('orders/' + id).once('value', (snapshot) => {
+                const data = snapshot.val();
+                const resDiv = document.getElementById('track-result');
+                resDiv.classList.remove('hidden');
+                
+                if(data) {
+                    document.getElementById('status-text').innerText = data.status;
+                    let msg = "Aapka order mil gaya hai, Pankaj bhai check kar rahe hain.";
+                    if(data.status === "Accepted") msg = "✅ Order mil gaya! Pankaj bhai ne accept kar liya hai.";
+                    if(data.status === "Dispatched") msg = "🚚 Aapka order shop se nikal chuka hai, raste mein hai!";
+                    document.getElementById('status-msg').innerText = msg;
+                } else {
+                    document.getElementById('status-text').innerText = "Not Found";
+                    document.getElementById('status-msg').innerText = "Order ID galat hai bhai.";
+                }
+            });
         }
 
         renderProducts();
