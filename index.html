@@ -30,7 +30,11 @@
         </div>
     </header>
 
-    <div class="flex overflow-x-auto p-4 gap-3 bg-white shadow-sm sticky top-[60px] z-50 scrollbar-hide">
+    <div class="p-3 bg-white sticky top-[60px] z-50 shadow-sm">
+        <input id="search-box" onkeyup="searchProducts()" type="text" placeholder="Search items (Maggi, Coke...)" class="w-full p-3 border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-sm">
+    </div>
+
+    <div class="flex overflow-x-auto p-4 gap-3 bg-white shadow-sm sticky top-[125px] z-50 scrollbar-hide">
         <button onclick="filterProducts('All', this)" class="cat-btn active-cat bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">All Items</button>
         <button onclick="filterProducts('Drink', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Cold Drinks</button>
         <button onclick="filterProducts('Kirana', this)" class="cat-btn bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">Daily Kirana</button>
@@ -40,33 +44,27 @@
 
     <main id="product-list" class="p-4 grid grid-cols-2 md:grid-cols-4 gap-4"></main>
 
-    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-[60] flex justify-center items-center p-4 text-black">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
-            <div id="login-form">
-                <h2 class="text-2xl font-black mb-1 text-indigo-700">Login</h2>
-                <p class="text-xs text-gray-500 mb-4">Verification code will be sent to your phone</p>
-                <div id="phone-input-section">
-                    <input id="login-phone" type="tel" placeholder="Mobile Number" class="w-full p-3 border rounded-xl mb-3 outline-none focus:ring-2 focus:ring-indigo-500">
-                    <button onclick="sendOTP()" class="w-full bg-indigo-700 text-white py-3 rounded-xl font-bold">Send OTP</button>
-                </div>
-                <div id="otp-input-section" class="hidden">
-                    <input id="login-otp" type="number" placeholder="Enter 4 Digit OTP" class="w-full p-3 border rounded-xl mb-3 outline-none text-center text-xl tracking-widest font-bold">
-                    <button onclick="verifyOTP()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">Verify & Login</button>
-                </div>
-                <p class="text-sm text-center mt-4">You Don't Have Account? <button onclick="switchAuth(true)" class="text-indigo-700 font-bold underline">Register yourself</button></p>
+    <div id="qr-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-[110] flex justify-center items-center p-4 text-black">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center modal-animate">
+            <h2 class="text-xl font-black text-indigo-700 mb-2">Scan & Pay</h2>
+            <div class="bg-indigo-50 p-4 rounded-2xl inline-block border-2 border-indigo-100 mb-2">
+                <img id="qr-image" src="" alt="UPI QR Code" class="w-48 h-48 mx-auto">
             </div>
-            <div id="register-form" class="hidden">
-                <h2 class="text-2xl font-black mb-4 text-indigo-700">Register</h2>
-                <div class="space-y-3">
-                    <input id="reg-name" type="text" placeholder="Full Name" class="w-full p-3 border rounded-xl outline-none">
-                    <input id="reg-phone" type="tel" placeholder="Mobile Number" class="w-full p-3 border rounded-xl outline-none">
-                    <input id="reg-email" type="email" placeholder="Email Address" class="w-full p-3 border rounded-xl outline-none">
-                    <input id="reg-addr" type="text" placeholder="Complete Address" class="w-full p-3 border rounded-xl outline-none">
-                </div>
-                <button onclick="handleRegister()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold mt-4">Sign Up</button>
-                <p class="text-sm text-center mt-3">Already Register? <button onclick="switchAuth(false)" class="text-indigo-700 font-bold underline">Login</button></p>
+
+            <div onclick="copyUPI()" class="mb-4 bg-gray-100 p-2 rounded-xl border border-dashed border-gray-400 cursor-pointer active:bg-green-100 transition-colors">
+                <p class="text-[9px] text-gray-500 font-bold uppercase">Tap to Copy UPI ID</p>
+                <p id="upi-id-text" class="text-sm font-black text-indigo-700">8954998216@ptsbi</p>
             </div>
-            <button onclick="toggleAuthModal()" class="w-full mt-4 text-gray-400 text-xs uppercase font-bold">Close</button>
+
+            <div class="text-2xl font-black text-green-600 mb-4">₹<span id="qr-amount-display">0</span></div>
+            
+            <div class="mb-4 text-left">
+                <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Transaction UTR (12 Digits) *</label>
+                <input id="utr-input" type="number" placeholder="Enter UTR Number" class="w-full p-3 border-2 border-indigo-600 rounded-xl outline-none font-bold text-center">
+            </div>
+            
+            <button onclick="confirmQRPayment()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg mb-3">Confirm Payment & Order</button>
+            <button onclick="toggleQRModal(false)" class="w-full text-gray-400 text-sm font-bold">Cancel</button>
         </div>
     </div>
 
@@ -95,21 +93,59 @@
             <div class="flex justify-between items-center py-2 text-xl font-bold border-t">
                 <span>Total:</span><span class="text-green-600">₹<span id="cart-total">0</span></span>
             </div>
-            <button onclick="placeOrder()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-md active:scale-95 transition-all">Confirm Your Order on WhatsApp</button>
+            
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <button onclick="placeOrder()" class="bg-green-600 text-white py-3 rounded-xl font-bold text-sm">WhatsApp (COD)</button>
+                <button onclick="openQR()" class="bg-indigo-700 text-white py-3 rounded-xl font-bold text-sm">Pay Online (QR)</button>
+            </div>
             <button onclick="toggleCart()" class="w-full mt-2 text-gray-400 text-sm">Continue Shopping</button>
+        </div>
+    </div>
+
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[120] flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 text-center modal-animate text-black">
+            <div class="text-6xl mb-4">✅</div>
+            <h2 class="text-2xl font-black text-green-600">Order Placed!</h2>
+            <p class="text-gray-500 mt-2 italic font-medium">Your Order ID is:</p>
+            <div class="bg-gray-100 p-3 rounded-xl mt-2 font-bold text-indigo-700 text-xl" id="final-ord-id">---</div>
+            <p class="text-xs text-gray-400 mt-4">Pankaj bhai abhi aapka order check karenge.</p>
+            <button onclick="location.reload()" class="w-full bg-indigo-700 text-white py-4 rounded-2xl font-bold mt-6 shadow-lg">Done</button>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-[60] flex justify-center items-center p-4 text-black">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <div id="login-form">
+                <h2 class="text-2xl font-black mb-1 text-indigo-700">Login</h2>
+                <div id="phone-input-section">
+                    <input id="login-phone" type="tel" placeholder="Mobile Number" class="w-full p-3 border rounded-xl mb-3 outline-none">
+                    <button onclick="sendOTP()" class="w-full bg-indigo-700 text-white py-3 rounded-xl font-bold">Send OTP</button>
+                </div>
+                <div id="otp-input-section" class="hidden">
+                    <input id="login-otp" type="number" placeholder="OTP" class="w-full p-3 border rounded-xl mb-3 text-center text-xl font-bold">
+                    <button onclick="verifyOTP()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">Verify</button>
+                </div>
+            </div>
+            <div id="register-form" class="hidden">
+                <h2 class="text-2xl font-black mb-4 text-indigo-700">Register</h2>
+                <input id="reg-name" type="text" placeholder="Name" class="w-full p-3 border rounded-xl mb-2">
+                <input id="reg-phone" type="tel" placeholder="Phone" class="w-full p-3 border rounded-xl mb-2">
+                <input id="reg-addr" type="text" placeholder="Address" class="w-full p-3 border rounded-xl mb-2">
+                <button onclick="handleRegister()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">Sign Up</button>
+            </div>
+            <button onclick="toggleAuthModal()" class="w-full mt-4 text-gray-400 text-xs uppercase">Close</button>
         </div>
     </div>
 
     <div id="track-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex justify-center items-center p-4 text-black">
         <div class="bg-white w-full max-w-md rounded-2xl p-6">
             <h2 class="text-xl font-bold mb-4 text-center">Track Order</h2>
-            <input id="track-id-input" type="text" placeholder="ORD1001" class="w-full p-3 border rounded-xl mb-4 uppercase text-center font-bold">
-            <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Check Status</button>
+            <input id="track-id-input" type="text" placeholder="ORD1001" class="w-full p-3 border rounded-xl mb-4 text-center font-bold">
+            <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Check</button>
             <div id="track-result" class="mt-4 p-4 bg-indigo-50 rounded-xl hidden text-center">
-                <p class="font-bold italic">Status: <span id="status-text" class="text-indigo-700 uppercase">---</span></p>
-                <div id="status-msg" class="text-sm mt-2"></div>
+                <p class="font-bold">Status: <span id="status-text" class="text-indigo-700 uppercase">---</span></p>
             </div>
-            <button onclick="showTrackModal()" class="w-full text-gray-400 mt-4 text-xs font-bold underline uppercase">Close</button>
+            <button onclick="showTrackModal()" class="w-full text-gray-400 mt-4 text-xs font-bold underline">Close</button>
         </div>
     </div>
 
@@ -118,17 +154,21 @@
             apiKey: "AIzaSyAeG25EZLmrhfedtBwsak0Fd_2Opsa99_g",
             authDomain: "pankaj-kirana-store-38072.firebaseapp.com",
             projectId: "pankaj-kirana-store-38072",
+            databaseURL: "https://pankaj-kirana-store-38072-default-rtdb.firebaseio.com",
             storageBucket: "pankaj-kirana-store-38072.firebasestorage.app",
             messagingSenderId: "581034855422",
             appId: "1:581034855422:web:aaf2abecef1c0e7ba60eaf"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
         const myWhatsApp = "918954998216";
+        const myUPI = "8954998216@ptsbi"; 
+        const storeName = "Pankaj Kirana Store";
 
         let currentUser = JSON.parse(localStorage.getItem('pankaj_user')) || null;
-        let generatedOTP = null;
         let cart = {};
+        let generatedOTP = null;
 
         const products = [
             { id: 1, name: "Coca Cola 750ml", price: 45, img: "🥤", cat: "Drink" },
@@ -183,112 +223,36 @@
             { id: 50, name: "Fair & Lovely", price: 60, img: "✨", cat: "Personal" }
         ];
 
-        // --- AUTH & OTP ---
-        function toggleAuthModal() { document.getElementById('auth-modal').classList.toggle('hidden'); }
-        function switchAuth(isReg) {
-            document.getElementById('login-form').classList.toggle('hidden', isReg);
-            document.getElementById('register-form').classList.toggle('hidden', !isReg);
-        }
-
-        function sendOTP() {
-            const phone = document.getElementById('login-phone').value;
-            if(phone.length < 10) { alert("Sahi number dalein!"); return; }
-            db.ref('users/' + phone).once('value').then(snap => {
-                if(snap.exists()) {
-                    generatedOTP = Math.floor(1000 + Math.random() * 9000);
-                    alert("DEMO OTP: " + generatedOTP);
-                    document.getElementById('phone-input-section').classList.add('hidden');
-                    document.getElementById('otp-input-section').classList.remove('hidden');
-                } else { alert("You don't have account. Please register yourself."); }
-            });
-        }
-
-        function verifyOTP() {
-            const entered = document.getElementById('login-otp').value;
-            if(entered == generatedOTP) {
-                const phone = document.getElementById('login-phone').value;
-                db.ref('users/' + phone).once('value').then(snap => {
-                    loginUser(snap.val());
-                    toggleAuthModal();
-                });
-            } else { alert("Galat OTP!"); }
-        }
-
-        function handleRegister() {
-            const name = document.getElementById('reg-name').value;
-            const phone = document.getElementById('reg-phone').value;
-            const addr = document.getElementById('reg-addr').value;
-            if(!name || !phone || !addr) { alert("Sab details bharein!"); return; }
-            db.ref('users/' + phone).set({ name, phone, address: addr }).then(() => {
-                loginUser({ name, phone, address: addr });
-                toggleAuthModal();
-            });
-        }
-
-        function loginUser(user) {
-            currentUser = user;
-            localStorage.setItem('pankaj_user', JSON.stringify(user));
-            updateUI();
-        }
-
-        function updateUI() {
-            if(currentUser) {
-                document.getElementById('user-welcome').innerText = "Welcome, " + currentUser.name.split(' ')[0];
-                document.getElementById('auth-btn').innerText = "Logout";
-                document.getElementById('auth-btn').onclick = () => { localStorage.clear(); location.reload(); };
-                
-                document.getElementById('disp-name').innerText = currentUser.name;
-                document.getElementById('disp-numbr').innerText = "+91 " + currentUser.phone;
-                document.getElementById('disp-addr').innerText = currentUser.address;
-
-                document.getElementById('cust-name').value = currentUser.name;
-                document.getElementById('cust-numbr').value = currentUser.phone;
-                document.getElementById('cust-addr').value = currentUser.address;
-            }
-        }
-
-        function toggleAddressEdit(show) {
-            document.getElementById('address-display-box').classList.toggle('hidden', show);
-            document.getElementById('address-edit-form').classList.toggle('hidden', !show);
-            if(!show) {
-                document.getElementById('disp-name').innerText = document.getElementById('cust-name').value;
-                document.getElementById('disp-numbr').innerText = document.getElementById('cust-numbr').value;
-                document.getElementById('disp-addr').innerText = document.getElementById('cust-addr').value;
-            }
-        }
-
-        // --- CORE LOGIC ---
-        function renderProducts(filter = 'All') {
-            const list = document.getElementById('product-list');
-            const filtered = filter === 'All' ? products : products.filter(p => p.cat === filter);
-            list.innerHTML = filtered.map(p => `
+        function renderProducts(list = products) {
+            const container = document.getElementById('product-list');
+            container.innerHTML = list.map(p => `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center flex flex-col justify-between">
                     <div>
                         <div class="text-4xl mb-2">${p.img}</div>
                         <h3 class="font-bold text-gray-800 text-xs h-8 overflow-hidden">${p.name}</h3>
                         <p class="text-indigo-600 font-bold">₹${p.price}</p>
                     </div>
-                    <button onclick="addToCart(${p.id}, event)" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold border border-indigo-100">+ Add</button>
+                    <button onclick="addToCart(${p.id})" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold border border-indigo-100">+ Add</button>
                 </div>
             `).join('');
+        }
+
+        function searchProducts() {
+            const q = document.getElementById('search-box').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(q));
+            renderProducts(filtered);
         }
 
         function filterProducts(cat, btn) {
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active-cat'));
             btn.classList.add('active-cat');
-            renderProducts(cat);
+            renderProducts(cat === 'All' ? products : products.filter(p => p.cat === cat));
         }
 
-        function addToCart(id, event) {
-            if (cart[id]) cart[id].qty++; 
-            else { 
-                const p = products.find(i => i.id === id);
-                cart[id] = { ...p, qty: 1 };
-            }
+        function addToCart(id) {
+            if (cart[id]) cart[id].qty++;
+            else { const p = products.find(i => i.id === id); cart[id] = { ...p, qty: 1 }; }
             updateCart();
-            const btn = event.target;
-            btn.innerText = "✓ Added";
-            setTimeout(() => { btn.innerText = "+ Add"; }, 800);
         }
 
         function updateCart() {
@@ -297,7 +261,7 @@
             itemsDiv.innerHTML = "";
             Object.values(cart).forEach(item => {
                 total += item.price * item.qty; count += item.qty;
-                itemsDiv.innerHTML += `<div class="flex justify-between items-center text-sm py-2 border-b"><div class="w-1/2"><b>${item.name}</b><br><span class="text-xs text-gray-400">₹${item.price}</span></div><div class="flex items-center gap-2"><button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">-</button><span class="w-4 text-center font-bold">${item.qty}</span><button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">+</button></div></div>`;
+                itemsDiv.innerHTML += `<div class="flex justify-between items-center text-sm py-2 border-b"><div class="w-1/2"><b>${item.name}</b><br>₹${item.price}</div><div class="flex items-center gap-2"><button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">-</button><span class="w-4 text-center font-bold">${item.qty}</span><button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">+</button></div></div>`;
             });
             document.getElementById('cart-count').innerText = count;
             document.getElementById('cart-total').innerText = total;
@@ -310,43 +274,140 @@
         }
 
         function toggleCart() { 
-            if(!currentUser) { alert("Please Login First!"); toggleAuthModal(); return; }
+            if(!currentUser) { toggleAuthModal(); return; }
             document.getElementById('cart-modal').classList.toggle('hidden'); 
             updateUI(); 
         }
 
+        function openQR() {
+            const total = document.getElementById('cart-total').innerText;
+            if(total == "0") return;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${myUPI}%26pn=${storeName}%26am=${total}%26cu=INR`;
+            document.getElementById('qr-image').src = qrUrl;
+            document.getElementById('qr-amount-display').innerText = total;
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function copyUPI() {
+            const upi = document.getElementById('upi-id-text').innerText;
+            navigator.clipboard.writeText(upi).then(() => {
+                alert("UPI ID Copied: " + upi);
+            });
+        }
+
+        function toggleQRModal(show) { document.getElementById('qr-modal').classList.toggle('hidden', !show); }
+
+        function confirmQRPayment() {
+            const utr = document.getElementById('utr-input').value;
+            if(utr.length < 10) {
+                alert("Please enter a valid 12-digit UTR Number!");
+                return;
+            }
+            toggleQRModal(false);
+            finalSubmit("Online-Paid-QR", utr);
+        }
+
         function placeOrder() {
+            finalSubmit("COD-Pending", "N/A");
+        }
+
+        function finalSubmit(payStatus, utrValue = "N/A") {
             const name = document.getElementById('cust-name').value;
             const addr = document.getElementById('cust-addr').value;
             const phone = document.getElementById('cust-numbr').value;
-            const rmrks = document.getElementById('cust-rmrks').value;
             const total = document.getElementById('cart-total').innerText;
-            const cartItems = Object.values(cart);
-            if(!name || !addr || cartItems.length === 0) { alert("Details ya cart empty hai!"); return; }
+            const items = Object.values(cart);
+            const rmrks = document.getElementById('cust-rmrks').value;
+
+            if(!name || !addr || items.length === 0) { alert("Details ya cart empty hai!"); return; }
 
             db.ref('last_order_id').transaction(v => (v || 1000) + 1, (err, comm, snap) => {
                 if(comm) {
                     const id = "ORD" + snap.val();
-                    const orderData = { id, name, address: addr, phone, items: cartItems, total, status: "Pending" };
+                    const orderData = { id, name, address: addr, phone, items, total, status: "Pending", payment: payStatus, utr: utrValue, timestamp: Date.now() };
+                    
                     db.ref('orders/' + id).set(orderData).then(() => {
-                        let str = ""; cartItems.forEach(i => str += `- ${i.name} [x${i.qty}]%0A`);
-                        const msg = `*ORDER: ${id}*%0A*Customer:* ${name}%0A*Phone:* ${phone}%0A*Address:* ${addr}%0A*Total:* ₹${total}%0A%0A*Items:*%0A${str}%0A*Note:* ${rmrks}`;
-                        window.location.href = `whatsapp://send?phone=${myWhatsApp}&text=${msg}`;
+                        document.getElementById('cart-modal').classList.add('hidden');
+                        document.getElementById('final-ord-id').innerText = id;
+                        document.getElementById('success-modal').classList.remove('hidden');
+                        
+                        let str = ""; items.forEach(i => str += `- ${i.name} [x${i.qty}]%0A`);
+                        const msg = `*ORDER: ${id}*%0A*Status:* ${payStatus}%0A*UTR:* ${utrValue}%0A*Customer:* ${name}%0A*Phone:* ${phone}%0A*Total:* ₹${total}%0A%0A*Items:*%0A${str}%0A*Note:* ${rmrks}`;
+                        
+                        cart = {}; updateCart();
+                        setTimeout(() => { window.location.href = `whatsapp://send?phone=${myWhatsApp}&text=${msg}`; }, 2500);
                     });
                 }
             });
         }
 
+        // --- AUTH LOGIC (UNIQUE OTP) ---
+        function toggleAuthModal() { document.getElementById('auth-modal').classList.toggle('hidden'); }
+        
+        function sendOTP() {
+            const phone = document.getElementById('login-phone').value;
+            if(phone.length < 10) { alert("Sahi number daalein bhai!"); return; }
+
+            db.ref('users/' + phone).once('value', s => {
+                if(s.exists()) {
+                    generatedOTP = Math.floor(1000 + Math.random() * 9000);
+                    alert("Aapka unique OTP hai: " + generatedOTP); 
+                    document.getElementById('phone-input-section').classList.add('hidden');
+                    document.getElementById('otp-input-section').classList.remove('hidden');
+                } else {
+                    document.getElementById('login-form').classList.add('hidden');
+                    document.getElementById('register-form').classList.remove('hidden');
+                    document.getElementById('reg-phone').value = phone;
+                }
+            });
+        }
+
+        function verifyOTP() {
+            const entered = document.getElementById('login-otp').value;
+            if(entered == generatedOTP) {
+                db.ref('users/' + document.getElementById('login-phone').value).once('value', s => {
+                    loginUser(s.val());
+                    toggleAuthModal();
+                });
+            } else {
+                alert("Galat OTP hai!");
+            }
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('reg-name').value, 
+                  phone = document.getElementById('reg-phone').value, 
+                  addr = document.getElementById('reg-addr').value;
+            if(!name || !phone || !addr) { alert("Saari details bharo!"); return; }
+            db.ref('users/' + phone).set({ name, phone, address: addr }).then(() => {
+                loginUser({ name, phone, address: addr });
+                toggleAuthModal();
+            });
+        }
+
+        function loginUser(user) { currentUser = user; localStorage.setItem('pankaj_user', JSON.stringify(user)); updateUI(); }
+
+        function updateUI() {
+            if(currentUser) {
+                document.getElementById('user-welcome').innerText = "Welcome, " + currentUser.name;
+                document.getElementById('auth-btn').innerText = "Logout";
+                document.getElementById('auth-btn').onclick = () => { localStorage.clear(); location.reload(); };
+                document.getElementById('disp-name').innerText = currentUser.name;
+                document.getElementById('disp-numbr').innerText = currentUser.phone;
+                document.getElementById('disp-addr').innerText = currentUser.address;
+                document.getElementById('cust-name').value = currentUser.name;
+                document.getElementById('cust-numbr').value = currentUser.phone;
+                document.getElementById('cust-addr').value = currentUser.address;
+            }
+        }
+
+        function toggleAddressEdit(show) { document.getElementById('address-display-box').classList.toggle('hidden', show); document.getElementById('address-edit-form').classList.toggle('hidden', !show); }
         function showTrackModal() { document.getElementById('track-modal').classList.toggle('hidden'); }
         function trackOrder() {
             const id = document.getElementById('track-id-input').value.toUpperCase();
-            db.ref('orders/' + id).once('value').then(snap => {
-                const res = document.getElementById('track-result');
-                res.classList.remove('hidden');
-                if(snap.exists()) {
-                    document.getElementById('status-text').innerText = snap.val().status;
-                    document.getElementById('status-msg').innerText = " ";
-                } else { alert("Order ID galat hai!"); }
+            db.ref('orders/' + id).once('value', s => {
+                if(s.exists()) { document.getElementById('status-text').innerText = s.val().status; document.getElementById('track-result').classList.remove('hidden'); }
+                else { alert("Order ID nahi mili!"); }
             });
         }
 
@@ -355,4 +416,3 @@
     </script>
 </body>
 </html>
-
