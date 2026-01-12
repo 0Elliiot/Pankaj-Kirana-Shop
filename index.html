@@ -351,7 +351,7 @@
             db.ref('users/' + phone).once('value', s => {
                 if(s.exists()) {
                     generatedOTP = Math.floor(1000 + Math.random() * 9000);
-                    alert("Aapka unique OTP hai: " + generatedOTP); 
+                    alert("Your unique OTP is: " + generatedOTP); 
                     document.getElementById('phone-input-section').classList.add('hidden');
                     document.getElementById('otp-input-section').classList.remove('hidden');
                 } else {
@@ -370,7 +370,7 @@
                     toggleAuthModal();
                 });
             } else {
-                alert("Galat OTP hai!");
+                alert("Please enter correct OTP !");
             }
         }
 
@@ -416,3 +416,4 @@
     </script>
 </body>
 </html>
+
