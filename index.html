@@ -44,6 +44,17 @@
 
     <main id="product-list" class="p-4 grid grid-cols-2 md:grid-cols-4 gap-4"></main>
 
+    <div id="variant-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-[100] flex justify-center items-end text-black">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 shadow-2xl modal-animate">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="variant-item-name" class="text-xl font-black text-indigo-700">Select Size</h2>
+                <button onclick="closeVariantModal()" class="text-gray-400 text-2xl">&times;</button>
+            </div>
+            <div id="variant-list" class="space-y-3 mb-6">
+                </div>
+        </div>
+    </div>
+
     <div id="qr-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-[110] flex justify-center items-center p-4 text-black">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center modal-animate">
             <h2 class="text-xl font-black text-indigo-700 mb-2">Scan & Pay</h2>
@@ -141,7 +152,7 @@
         <div class="bg-white w-full max-w-md rounded-2xl p-6">
             <h2 class="text-xl font-bold mb-4 text-center">Track Order</h2>
             <input id="track-id-input" type="text" placeholder="ORD1001" class="w-full p-3 border rounded-xl mb-4 text-center font-bold">
-            <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Check</button>
+            <button onclick="trackOrder()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Check Status</button>
             <div id="track-result" class="mt-4 p-4 bg-indigo-50 rounded-xl hidden text-center">
                 <p class="font-bold">Status: <span id="status-text" class="text-indigo-700 uppercase">---</span></p>
             </div>
@@ -170,72 +181,105 @@
         let cart = {};
         let generatedOTP = null;
 
+        // DATA UPDATED WITH VARIANTS
         const products = [
-            { id: 1, name: "Coca Cola 750ml", price: 45, img: "🥤", cat: "Drink" },
-            { id: 2, name: "Pepsi 750ml", price: 45, img: "🥤", cat: "Drink" },
-            { id: 3, name: "Sprite 750ml", price: 45, img: "🍋", cat: "Drink" },
-            { id: 4, name: "Thums Up 750ml", price: 45, img: "🥤", cat: "Drink" },
-            { id: 5, name: "Maaza 600ml", price: 40, img: "🥭", cat: "Drink" },
+            { id: 1, name: "Coca Cola", img: "🥤", cat: "Drink", 
+              variants: [{size: "250ml", price: 20}, {size: "750ml", price: 45}, {size: "1.25L", price: 70}, {size: "2L", price: 95}] 
+            },
+            { id: 2, name: "Pepsi", img: "🥤", cat: "Drink",
+              variants: [{size: "250ml", price: 20}, {size: "750ml", price: 45}, {size: "2L", price: 95}]
+            },
+            { id: 3, name: "Sprite", img: "🍋", cat: "Drink",
+              variants: [{size: "250ml", price: 20}, {size: "750ml", price: 45}, {size: "2L", price: 95}]
+            },
+            { id: 4, name: "Thums Up", img: "🥤", cat: "Drink",
+              variants: [{size: "250ml", price: 20}, {size: "750ml", price: 45}, {size: "2L", price: 95}]
+            },
+            { id: 5, name: "Maaza", img: "🥭", cat: "Drink",
+              variants: [{size: "150ml", price: 10}, {size: "600ml", price: 40}, {size: "1.2L", price: 75}]
+            },
             { id: 6, name: "Sting Energy", price: 20, img: "⚡", cat: "Drink" },
-            { id: 7, name: "Mountain Dew", price: 45, img: "🍏", cat: "Drink" },
-            { id: 8, name: "Limca 750ml", price: 45, img: "🍸", cat: "Drink" },
-            { id: 9, name: "Frooti Tetra", price: 10, img: "🧃", cat: "Drink" },
-            { id: 10, name: "Red Bull", price: 125, img: "🐂", cat: "Drink" },
-            { id: 11, name: "Fortune Oil 1L", price: 160, img: "🍶", cat: "Kirana" },
-            { id: 12, name: "Aashirvaad Atta 5kg", price: 255, img: "🌾", cat: "Kirana" },
+            { id: 7, name: "Mountain Dew", img: "🍏", cat: "Drink",
+              variants: [{size: "250ml", price: 20}, {size: "750ml", price: 45}, {size: "1L", price: 60}, {size: "2L", price: 95}]
+            },
+            { id: 11, name: "Fortune Oil", img: "🍶", cat: "Kirana",
+              variants: [{size: "500ml", price: 85}, {size: "1L", price: 160}, {size: "5L", price: 780}]
+            },
+            { id: 12, name: "Aashirvaad Atta", img: "🌾", cat: "Kirana",
+              variants: [{size: "1kg", price: 55}, {size: "5kg", price: 255}, {size: "10kg", price: 490}]
+            },
             { id: 13, name: "Tata Salt 1kg", price: 28, img: "🧂", cat: "Kirana" },
-            { id: 14, name: "Sugar 1kg", price: 45, img: "🍬", cat: "Kirana" },
-            { id: 15, name: "Red Label 250g", price: 145, img: "☕", cat: "Kirana" },
-            { id: 16, name: "Toor Dal 1kg", price: 170, img: "🍲", cat: "Kirana" },
-            { id: 17, name: "Moong Dal 1kg", price: 120, img: "🍲", cat: "Kirana" },
-            { id: 18, name: "Basmati Rice 1kg", price: 95, img: "🍚", cat: "Kirana" },
-            { id: 19, name: "Rajma 1kg", price: 140, img: "🍛", cat: "Kirana" },
-            { id: 20, name: "Kabuli Chana 1kg", price: 130, img: "🍛", cat: "Kirana" },
-            { id: 21, name: "Poha 1kg", price: 55, img: "🌾", cat: "Kirana" },
-            { id: 22, name: "Besan 500g", price: 60, img: "🥣", cat: "Kirana" },
-            { id: 23, name: "Suji 500g", price: 35, img: "🥣", cat: "Kirana" },
-            { id: 24, name: "Maida 500g", price: 30, img: "🥣", cat: "Kirana" },
-            { id: 25, name: "MDH Masala", price: 85, img: "📦", cat: "Kirana" },
-            { id: 26, name: "Maggi 12-Pack", price: 160, img: "🍜", cat: "Snacks" },
+            { id: 14, name: "Sugar", img: "🍬", cat: "Kirana",
+              variants: [{size: "1kg", price: 45}, {size: "5kg", price: 220}]
+            },
+            { id: 26, name: "Maggi", img: "🍜", cat: "Snacks",
+              variants: [{size: "Single", price: 14}, {size: "4-Pack", price: 56}, {size: "12-Pack", price: 160}]
+            },
             { id: 27, name: "Kurkure Masala", price: 10, img: "🍿", cat: "Snacks" },
             { id: 28, name: "Lays Blue", price: 10, img: "🍟", cat: "Snacks" },
-            { id: 29, name: "Uncle Chips", price: 20, img: "🍟", cat: "Snacks" },
-            { id: 30, name: "Parle-G (Big)", price: 25, img: "🍪", cat: "Snacks" },
-            { id: 31, name: "Good Day", price: 30, img: "🍪", cat: "Snacks" },
-            { id: 32, name: "Hide & Seek", price: 35, img: "🍪", cat: "Snacks" },
-            { id: 33, name: "Marie Gold", price: 10, img: "🍪", cat: "Snacks" },
-            { id: 34, name: "Haldiram Bhujia", price: 40, img: "🥨", cat: "Snacks" },
-            { id: 35, name: "Almond 100g", price: 110, img: "🥜", cat: "Snacks" },
-            { id: 36, name: "Kaju 100g", price: 120, img: "🥜", cat: "Snacks" },
-            { id: 37, name: "Dairy Milk", price: 40, img: "🍫", cat: "Snacks" },
-            { id: 38, name: "KitKat", price: 25, img: "🍫", cat: "Snacks" },
-            { id: 39, name: "Ketchup Bottle", price: 120, img: "🍅", cat: "Snacks" },
-            { id: 40, name: "Pasta 500g", price: 65, img: "🍝", cat: "Snacks" },
             { id: 41, name: "Dettol Soap", price: 35, img: "🧼", cat: "Personal" },
-            { id: 42, name: "Dove Soap", price: 55, img: "🧼", cat: "Personal" },
-            { id: 43, name: "Colgate Paste", price: 95, img: "🪥", cat: "Personal" },
-            { id: 44, name: "Clinic Plus", price: 75, img: "🧴", cat: "Personal" },
-            { id: 45, name: "Parachute Oil", price: 40, img: "🥥", cat: "Personal" },
-            { id: 46, name: "Surf Excel 1kg", price: 140, img: "🧺", cat: "Personal" },
-            { id: 47, name: "Vim Bar", price: 10, img: "🍋", cat: "Personal" },
-            { id: 48, name: "Harpic Blue", price: 105, img: "🚽", cat: "Personal" },
-            { id: 49, name: "Lizol 500ml", price: 115, img: "🧹", cat: "Personal" },
-            { id: 50, name: "Fair & Lovely", price: 60, img: "✨", cat: "Personal" }
+            { id: 46, name: "Surf Excel", img: "🧺", cat: "Personal",
+              variants: [{size: "500g", price: 75}, {size: "1kg", price: 140}]
+            }
         ];
 
         function renderProducts(list = products) {
             const container = document.getElementById('product-list');
-            container.innerHTML = list.map(p => `
+            container.innerHTML = list.map(p => {
+                // Displaying price or price range
+                let priceDisplay = p.price ? `₹${p.price}` : `₹${p.variants[0].price}+`;
+                return `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center flex flex-col justify-between">
                     <div>
                         <div class="text-4xl mb-2">${p.img}</div>
                         <h3 class="font-bold text-gray-800 text-xs h-8 overflow-hidden">${p.name}</h3>
-                        <p class="text-indigo-600 font-bold">₹${p.price}</p>
+                        <p class="text-indigo-600 font-bold">${priceDisplay}</p>
                     </div>
-                    <button onclick="addToCart(${p.id})" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold border border-indigo-100">+ Add</button>
+                    <button onclick="handleAddToCart(${p.id})" class="mt-3 w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold border border-indigo-100">+ Add</button>
                 </div>
-            `).join('');
+            `}).join('');
         }
+
+        // NEW LOGIC FOR VARIANTS
+        function handleAddToCart(id) {
+            const p = products.find(i => i.id === id);
+            if(p.variants) {
+                document.getElementById('variant-item-name').innerText = p.name;
+                const vList = document.getElementById('variant-list');
+                vList.innerHTML = p.variants.map(v => `
+                    <button onclick="addVariantToCart(${p.id}, '${v.size}', ${v.price})" class="w-full flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 active:bg-indigo-50 transition-all">
+                        <span class="font-bold text-gray-700">${v.size}</span>
+                        <span class="font-black text-indigo-700">₹${v.price}</span>
+                    </button>
+                `).join('');
+                document.getElementById('variant-modal').classList.remove('hidden');
+            } else {
+                addToCart(p.id, p.name, p.price);
+            }
+        }
+
+        function addVariantToCart(id, size, price) {
+            const p = products.find(i => i.id === id);
+            const fullName = `${p.name} (${size})`;
+            const cartKey = id + "_" + size; // Unique key for different sizes
+            
+            if (cart[cartKey]) {
+                cart[cartKey].qty++;
+            } else {
+                cart[cartKey] = { id: cartKey, name: fullName, price: price, qty: 1 };
+            }
+            
+            closeVariantModal();
+            updateCart();
+        }
+
+        function addToCart(id, name, price) {
+            if (cart[id]) cart[id].qty++;
+            else { cart[id] = { id, name, price, qty: 1 }; }
+            updateCart();
+        }
+
+        function closeVariantModal() { document.getElementById('variant-modal').classList.add('hidden'); }
 
         function searchProducts() {
             const q = document.getElementById('search-box').value.toLowerCase();
@@ -249,19 +293,13 @@
             renderProducts(cat === 'All' ? products : products.filter(p => p.cat === cat));
         }
 
-        function addToCart(id) {
-            if (cart[id]) cart[id].qty++;
-            else { const p = products.find(i => i.id === id); cart[id] = { ...p, qty: 1 }; }
-            updateCart();
-        }
-
         function updateCart() {
             let total = 0, count = 0;
             const itemsDiv = document.getElementById('cart-items');
             itemsDiv.innerHTML = "";
             Object.values(cart).forEach(item => {
                 total += item.price * item.qty; count += item.qty;
-                itemsDiv.innerHTML += `<div class="flex justify-between items-center text-sm py-2 border-b"><div class="w-1/2"><b>${item.name}</b><br>₹${item.price}</div><div class="flex items-center gap-2"><button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">-</button><span class="w-4 text-center font-bold">${item.qty}</span><button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">+</button></div></div>`;
+                itemsDiv.innerHTML += `<div class="flex justify-between items-center text-sm py-2 border-b"><div class="w-1/2"><b>${item.name}</b><br>₹${item.price}</div><div class="flex items-center gap-2"><button onclick="changeQty('${item.id}', -1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">-</button><span class="w-4 text-center font-bold">${item.qty}</span><button onclick="changeQty('${item.id}', 1)" class="w-6 h-6 bg-gray-100 rounded-full font-black">+</button></div></div>`;
             });
             document.getElementById('cart-count').innerText = count;
             document.getElementById('cart-total').innerText = total;
@@ -290,26 +328,19 @@
 
         function copyUPI() {
             const upi = document.getElementById('upi-id-text').innerText;
-            navigator.clipboard.writeText(upi).then(() => {
-                alert("UPI ID Copied: " + upi);
-            });
+            navigator.clipboard.writeText(upi).then(() => { alert("UPI ID Copied: " + upi); });
         }
 
         function toggleQRModal(show) { document.getElementById('qr-modal').classList.toggle('hidden', !show); }
 
         function confirmQRPayment() {
             const utr = document.getElementById('utr-input').value;
-            if(utr.length < 10) {
-                alert("Please enter a valid 12-digit UTR Number!");
-                return;
-            }
+            if(utr.length < 10) { alert("Please enter a valid 12-digit UTR Number!"); return; }
             toggleQRModal(false);
             finalSubmit("Online-Paid-QR", utr);
         }
 
-        function placeOrder() {
-            finalSubmit("COD-Pending", "N/A");
-        }
+        function placeOrder() { finalSubmit("COD-Pending", "N/A"); }
 
         function finalSubmit(payStatus, utrValue = "N/A") {
             const name = document.getElementById('cust-name').value;
@@ -341,13 +372,11 @@
             });
         }
 
-        // --- AUTH LOGIC (UNIQUE OTP) ---
         function toggleAuthModal() { document.getElementById('auth-modal').classList.toggle('hidden'); }
         
         function sendOTP() {
             const phone = document.getElementById('login-phone').value;
             if(phone.length < 10) { alert("Sahi number daalein bhai!"); return; }
-
             db.ref('users/' + phone).once('value', s => {
                 if(s.exists()) {
                     generatedOTP = Math.floor(1000 + Math.random() * 9000);
@@ -369,9 +398,7 @@
                     loginUser(s.val());
                     toggleAuthModal();
                 });
-            } else {
-                alert("Please enter correct OTP !");
-            }
+            } else { alert("Please enter correct OTP !"); }
         }
 
         function handleRegister() {
@@ -416,4 +443,3 @@
     </script>
 </body>
 </html>
-
